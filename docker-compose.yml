@@ -1,0 +1,103 @@
+# ============================================
+# StellarIDE — Local Development
+# Usage: docker-compose up --build
+# ============================================
+version: '3.9'
+
+services:
+
+  # ── PostgreSQL Database ───────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: stellar_ide_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB:-stellar_ide}
+      POSTGRES_USER:     ${POSTGRES_USER:-stellar_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stellar_pass}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-stellar_user} -d ${POSTGRES_DB:-stellar_ide}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis Cache ───────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: stellar_ide_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Rust Axum Backend ─────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: stellar_ide_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL:     ${DATABASE_URL:-postgres://stellar_user:stellar_pass@postgres:5432/stellar_ide}
+      REDIS_URL:        ${REDIS_URL:-redis://redis:6379}
+      JWT_SECRET:       ${JWT_SECRET:-change_this_secret}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      SANDBOX_IMAGE:    ${SANDBOX_IMAGE:-wasm_sandbox}
+      MAX_SANDBOXES:    ${MAX_SANDBOXES:-4}
+      RUST_LOG:         ${RUST_LOG:-info}
+      PORT:             ${PORT:-8080}
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - cargo_cache:/mnt/cargo
+      - /tmp:/tmp
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ── React Frontend ────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: stellar_ide_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  # ── Nginx Reverse Proxy ───────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: stellar_ide_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+
+# ── Named Volumes ─────────────────────────
+volumes:
+  postgres_data:
+  redis_data:
+  cargo_cache:

@@ -1,0 +1,88 @@
+# ============================================
+# StellarIDE — Production Deployment
+# Usage: docker-compose -f docker-compose.prod.yml up -d
+# ============================================
+version: '3.9'
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: stellar_ide_db
+    restart: always
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    # NOT exposed to public in production
+
+  redis:
+    image: redis:7-alpine
+    container_name: stellar_ide_redis
+    restart: always
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    image: stellar-ide-backend:latest
+    container_name: stellar_ide_backend
+    restart: always
+    environment:
+      DATABASE_URL:         ${DATABASE_URL}
+      REDIS_URL:            ${REDIS_URL}
+      JWT_SECRET:           ${JWT_SECRET}
+      GITHUB_CLIENT_ID:     ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      SANDBOX_IMAGE:        wasm_sandbox
+      MAX_SANDBOXES:        ${MAX_SANDBOXES:-10}
+      RUST_LOG:             warn
+      PORT:                 8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - cargo_cache:/mnt/cargo
+      - /tmp:/tmp
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    image: stellar-ide-frontend:latest
+    container_name: stellar_ide_frontend
+    restart: always
+
+  nginx:
+    image: nginx:alpine
+    container_name: stellar_ide_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+  cargo_cache:

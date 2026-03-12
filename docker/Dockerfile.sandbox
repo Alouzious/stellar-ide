@@ -1,0 +1,94 @@
+# ============================================
+# StellarIDE Sandbox — Soroban Build Environment
+# This image runs user contract code in isolation
+#
+# Build command:
+# docker build -f docker/Dockerfile.sandbox -t wasm_sandbox .
+# ============================================
+FROM rustlang/rust:nightly AS sandbox
+
+# ── Cargo Cache Volume ────────────────────────
+# All builds share this volume for fast rebuilds
+ENV CARGO_HOME=/mnt/cargo
+ENV CARGO_TARGET_DIR=/mnt/cargo/target
+ENV PATH=/mnt/cargo/bin:/usr/local/cargo/bin:${PATH}
+
+WORKDIR /workspace
+
+# Fix rustup path when CARGO_HOME is overridden
+RUN mkdir -p /mnt/cargo/bin && \
+    ln -sf /usr/local/cargo/bin/rustup \
+           /mnt/cargo/bin/rustup
+
+# ── System Dependencies ───────────────────────
+RUN apt-get update && apt-get install -y \
+    clang           \
+    lld             \
+    git             \
+    build-essential \
+    pkg-config      \
+    libssl-dev      \
+    libdbus-1-dev   \
+    libudev-dev     \
+    curl            \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Rust Toolchain ────────────────────────────
+RUN rustup default nightly && \
+    rustup override set nightly
+
+# WASM build targets needed for Soroban
+RUN rustup target add wasm32-unknown-unknown
+RUN rustup target add wasm32v1-none
+
+# Components needed for Scout Audit
+RUN rustup component add rustc-dev llvm-tools-preview
+
+# ── Stellar CLI ───────────────────────────────
+RUN cargo install --locked stellar-cli && \
+    install -m 0755 \
+    /mnt/cargo/bin/stellar \
+    /usr/local/bin/stellar
+
+# Verify stellar-cli installed correctly
+RUN stellar --version
+
+# ── Scout Audit ───────────────────────────────
+RUN CARGO_BUILD_JOBS=2 cargo install \
+    --locked                         \
+    --debug                          \
+    cargo-scout-audit                \
+    --version 0.3.16 &&              \
+    install -m 0755                  \
+    /mnt/cargo/bin/cargo-scout-audit \
+    /usr/local/bin/cargo-scout-audit
+
+# Verify scout-audit installed correctly
+RUN cargo-scout-audit --version
+
+# ── Starter Contract Template ─────────────────
+# Pre-fetch all Soroban dependencies so user
+# builds are fast — no waiting for crate downloads
+COPY sandbox/templates/Cargo.toml.template ./Cargo.toml
+RUN mkdir -p src && \
+    echo '#![no_std]' > src/lib.rs && \
+    echo 'use soroban_sdk::{contract, contractimpl, Env};' >> src/lib.rs && \
+    echo '#[contract] pub struct Contract;' >> src/lib.rs && \
+    echo '#[contractimpl] impl Contract {}' >> src/lib.rs
+
+# Pre-fetch all dependencies
+RUN cargo fetch
+
+# Pre-build to warm the cache
+RUN cargo build --target wasm32-unknown-unknown \
+    --release 2>/dev/null || true
+
+# ── Security: non-root user ───���───────────────
+# All user contract code runs as sandboxuser
+# not as root — for safety
+RUN useradd -m -u 1001 sandboxuser && \
+    chown -R sandboxuser:sandboxuser /workspace
+USER sandboxuser
+
+# Default command — overridden by backend
+CMD ["/bin/bash"]

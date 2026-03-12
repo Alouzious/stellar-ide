@@ -7,9 +7,12 @@ node_modules/
 dist/
 .next/
 
-# Environment
+
+# Environment files - NEVER commit
 .env
 .env.local
+.env.production
+backend/.env
 
 # Docker
 *.log

@@ -60,10 +60,10 @@ export function ExplorePanel() {
   )
 }
 
-function ContractFunction({ fn, contractId }) {
+function ContractFunction({ fn }) {
   const [expanded, setExpanded] = useState(false)
   const [args, setArgs] = useState({})
-  const [result, setResult] = useState(null)
+  const [result] = useState(null)
 
   const invoke = () => {
     // Placeholder for actual invocation

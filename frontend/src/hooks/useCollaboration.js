@@ -32,6 +32,7 @@ export function useCollaboration(projectId) {
       setConnected(false)
       setRoomId(null)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, token])
 
   const sendEdit = (delta) => {

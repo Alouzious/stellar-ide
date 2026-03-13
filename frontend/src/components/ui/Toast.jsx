@@ -11,6 +11,7 @@ const toastStyle = {
   padding: '10px 14px',
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const notify = {
   success: (message) =>
     toast.success(message, {

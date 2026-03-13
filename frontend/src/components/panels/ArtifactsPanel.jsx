@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/Button'
 import { copyToClipboard } from '@/lib/utils'
 import { notify } from '@/components/ui/Toast'
 import { useArtifacts } from '@/hooks/useArtifacts'
-import { clsx } from 'clsx'
 
 export function ArtifactsPanel() {
   const { artifacts, loading, download } = useArtifacts()

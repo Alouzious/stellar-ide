@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { useProjectStore } from '@/store/projectStore'
 import { getProjects, createProject, updateProject, deleteProject } from '@/api/projects'
 import { notify } from '@/components/ui/Toast'

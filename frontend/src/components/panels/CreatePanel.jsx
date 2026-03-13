@@ -72,7 +72,7 @@ impl StorageContract {
 }
 
 export function CreatePanel() {
-  const { setCode, addFile, setActiveFile, files } = useEditorStore()
+  const { setCode, setActiveFile, files } = useEditorStore()
 
   const loadTemplate = (templateId) => {
     const code = TEMPLATE_CODE[templateId] || TEMPLATE_CODE.hello

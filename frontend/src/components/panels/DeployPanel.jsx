@@ -7,7 +7,6 @@ import { useDeploy } from '@/hooks/useDeploy'
 import { copyToClipboard } from '@/lib/utils'
 import { getExplorerUrl } from '@/lib/stellar'
 import { notify } from '@/components/ui/Toast'
-import { clsx } from 'clsx'
 
 export function DeployPanel() {
   const { deploy, deploying, result } = useDeploy()

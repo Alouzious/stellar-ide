@@ -1,5 +1,4 @@
 import { FolderOpen, Trash2, ExternalLink, Clock } from 'lucide-react'
-import { clsx } from 'clsx'
 import { Badge } from '@/components/ui/Badge'
 import { formatRelativeDate } from '@/lib/utils'
 

@@ -9,6 +9,15 @@ export function useAuth() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
+  const fetchMe = async (authToken) => {
+    try {
+      const { data } = await getMe()
+      setAuth(data, authToken)
+    } catch {
+      clearAuth()
+    }
+  }
+
   useEffect(() => {
     // Handle OAuth callback: ?token=xxx
     const callbackToken = searchParams.get('token')
@@ -19,16 +28,8 @@ export function useAuth() {
     } else if (token && !user) {
       fetchMe(token)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  const fetchMe = async (authToken) => {
-    try {
-      const { data } = await getMe()
-      setAuth(data, authToken)
-    } catch {
-      clearAuth()
-    }
-  }
 
   const logout = async () => {
     clearAuth()

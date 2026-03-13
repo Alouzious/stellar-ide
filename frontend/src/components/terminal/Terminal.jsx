@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
 import { Terminal as TerminalIcon, X, Maximize2, Minimize2, Trash2 } from 'lucide-react'
-import { clsx } from 'clsx'
 import { useTerminalStore } from '@/store/terminalStore'
 import { TerminalLine } from './TerminalLine'
 import { TerminalResizer } from './TerminalResizer'

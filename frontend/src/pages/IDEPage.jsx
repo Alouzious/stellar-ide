@@ -11,10 +11,9 @@ import { WalletConnect } from '@/components/wallet/WalletConnect'
 import { useAuthStore } from '@/store/authStore'
 import { useProjectStore } from '@/store/projectStore'
 import { useAuth } from '@/hooks/useAuth'
-import { clsx } from 'clsx'
 
 export function IDEPage() {
-  const { id } = useParams()
+  useParams()
   const { user } = useAuthStore()
   const { currentProject } = useProjectStore()
   const { logout } = useAuth()

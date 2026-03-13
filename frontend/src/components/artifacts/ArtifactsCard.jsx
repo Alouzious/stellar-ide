@@ -1,6 +1,6 @@
 import { Copy, CheckCircle, Package } from 'lucide-react'
 import { useState } from 'react'
-import { copyToClipboard, truncateAddress } from '@/lib/utils'
+import { copyToClipboard } from '@/lib/utils'
 import { notify } from '@/components/ui/Toast'
 
 export function ArtifactsCard({ contractId, abi }) {

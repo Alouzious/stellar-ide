@@ -3,7 +3,6 @@ import {
   FilePlus, TestTube2, Hammer, Rocket, Search, Shield,
   Package, Users, Settings, User
 } from 'lucide-react'
-import { clsx } from 'clsx'
 import { SidebarIcon } from './SidebarIcon'
 import { SidebarPanel } from './SidebarPanel'
 import { CreatePanel } from '@/components/panels/CreatePanel'

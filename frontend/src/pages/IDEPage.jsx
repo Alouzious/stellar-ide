@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { Rocket, LogOut } from 'lucide-react'
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
+
 import { Sidebar } from '@/components/sidebar/Sidebar'
 import { MonacoEditor } from '@/components/editor/MonacoEditor'
 import { EditorTabs } from '@/components/editor/EditorTabs'

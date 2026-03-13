@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 
+let lineCounter = 0
+
 export const useTerminalStore = create((set, get) => ({
   lines: [],
   isOpen: true,
@@ -8,7 +10,7 @@ export const useTerminalStore = create((set, get) => ({
 
   addLine: (line) => {
     const { lines } = get()
-    set({ lines: [...lines, { ...line, id: Date.now() + Math.random() }] })
+    set({ lines: [...lines, { ...line, id: ++lineCounter }] })
   },
 
   clear: () => set({ lines: [] }),

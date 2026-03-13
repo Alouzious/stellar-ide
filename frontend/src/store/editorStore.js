@@ -62,48 +62,59 @@ inherits = "release"
 debug-assertions = true
 `
 
+const DEFAULT_FILES = {
+  'lib.rs': DEFAULT_HELLO_WORLD_CONTRACT,
+  'Cargo.toml': DEFAULT_CARGO_TOML,
+}
+
 export const useEditorStore = create((set, get) => ({
   code: DEFAULT_HELLO_WORLD_CONTRACT,
   activeFile: 'lib.rs',
-  files: {
-    'lib.rs': DEFAULT_HELLO_WORLD_CONTRACT,
-    'Cargo.toml': DEFAULT_CARGO_TOML,
-  },
+  // files holds the current (possibly unsaved) editor content per file
+  files: { ...DEFAULT_FILES },
+  // savedFiles tracks the last explicitly saved content per file
+  savedFiles: { ...DEFAULT_FILES },
   isDirty: false,
 
   setCode: (code) => {
-    const { activeFile, files } = get()
-    set({
+    const { activeFile, savedFiles } = get()
+    set((state) => ({
       code,
-      isDirty: code !== files[activeFile],
-      files: { ...files, [activeFile]: code },
-    })
+      isDirty: code !== savedFiles[activeFile],
+      files: { ...state.files, [activeFile]: code },
+    }))
   },
 
   setActiveFile: (file) => {
-    const { files } = get()
-    set({ activeFile: file, code: files[file] || '', isDirty: false })
+    const { files, savedFiles } = get()
+    set({ activeFile: file, code: files[file] || '', isDirty: (files[file] || '') !== (savedFiles[file] || '') })
   },
 
   saveFile: () => {
-    const { activeFile, code, files } = get()
-    set({ files: { ...files, [activeFile]: code }, isDirty: false })
+    const { activeFile, code, savedFiles } = get()
+    set({ savedFiles: { ...savedFiles, [activeFile]: code }, isDirty: false })
   },
 
   addFile: (filename, content = '') => {
-    const { files } = get()
-    set({ files: { ...files, [filename]: content } })
+    set((state) => ({
+      files: { ...state.files, [filename]: content },
+      savedFiles: { ...state.savedFiles, [filename]: content },
+    }))
   },
 
   removeFile: (filename) => {
-    const { files, activeFile } = get()
+    const { files, savedFiles, activeFile } = get()
     const newFiles = { ...files }
+    const newSavedFiles = { ...savedFiles }
     delete newFiles[filename]
+    delete newSavedFiles[filename]
     const newActive = activeFile === filename ? Object.keys(newFiles)[0] || '' : activeFile
     set({
       files: newFiles,
+      savedFiles: newSavedFiles,
       activeFile: newActive,
       code: newFiles[newActive] || '',
+      isDirty: false,
     })
   },
 }))

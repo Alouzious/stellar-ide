@@ -29,14 +29,16 @@ async function streamRequest(endpoint, payload, token, onLine) {
   }
 }
 
+const toPayload = (code) => ({ source_code: code, language: 'rust' })
+
 export const compileCode = (code, token, onLine) =>
-  streamRequest('/sandbox/compile', { code }, token, onLine)
+  streamRequest('/sandbox/compile', toPayload(code), token, onLine)
 
 export const buildCode = (code, token, onLine) =>
-  streamRequest('/sandbox/build', { code }, token, onLine)
+  streamRequest('/sandbox/build', toPayload(code), token, onLine)
 
 export const testCode = (code, token, onLine) =>
-  streamRequest('/sandbox/test', { code }, token, onLine)
+  streamRequest('/sandbox/test', toPayload(code), token, onLine)
 
 export const auditCode = (code, token, onLine) =>
-  streamRequest('/sandbox/audit', { code }, token, onLine)
+  streamRequest('/sandbox/audit', toPayload(code), token, onLine)

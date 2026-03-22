@@ -8,6 +8,43 @@ import { DeploymentHistory } from '@/components/projects/DeploymentHistory'
 import { useAuth } from '@/hooks/useAuth'
 import { useProject } from '@/hooks/useProject'
 
+const TEMPLATE_CODE = {
+  'Hello World': `#![no_std]
+use soroban_sdk::{contract, contractimpl, symbol_short, vec, Env, Symbol, Vec};
+
+#[contract]
+pub struct HelloContract;
+
+#[contractimpl]
+impl HelloContract {
+    pub fn hello(env: Env, to: Symbol) -> Vec<Symbol> {
+        vec![&env, symbol_short!("Hello"), to]
+    }
+}`,
+  'Token': `#![no_std]
+use soroban_sdk::{contract, contractimpl, Address, Env, String};
+
+#[contract]
+pub struct TokenContract;
+
+#[contractimpl]
+impl TokenContract {
+    pub fn initialize(env: Env, admin: Address, name: String, symbol: String) {
+        admin.require_auth();
+    }
+}`,
+  default: `#![no_std]
+use soroban_sdk::{contract, contractimpl, Env};
+
+#[contract]
+pub struct MyContract;
+
+#[contractimpl]
+impl MyContract {
+    // Add your contract functions here
+}`,
+}
+
 export function DashboardPage() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
@@ -24,13 +61,19 @@ export function DashboardPage() {
   }
 
   const handleCreate = async (data) => {
-    const project = await create(data)
+    const source_code = TEMPLATE_CODE[data.template] || TEMPLATE_CODE.default
+    const project = await create({
+      name: data.name,
+      description: data.description || null,
+      source_code,
+      language: 'rust',
+      is_public: false,
+    })
     if (project) navigate(`/ide/${project.id}`)
   }
 
   return (
     <div className="min-h-screen bg-bg-primary font-sans overflow-auto">
-      {/* Header */}
       <header className="bg-bg-secondary border-b border-bg-border px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -40,10 +83,10 @@ export function DashboardPage() {
           <div className="flex items-center gap-4">
             {user && (
               <div className="flex items-center gap-2">
-                {user.avatarUrl && (
-                  <img src={user.avatarUrl} alt={user.name} className="w-7 h-7 rounded-full border border-bg-border" />
+                {user.avatar_url && (
+                  <img src={user.avatar_url} alt={user.username} className="w-7 h-7 rounded-full border border-bg-border" />
                 )}
-                <span className="text-sm text-text-secondary">{user.name || user.email}</span>
+                <span className="text-sm text-text-secondary">{user.username || user.email}</span>
               </div>
             )}
             <Button variant="ghost" size="sm" icon={LogOut} onClick={logout}>
@@ -53,7 +96,6 @@ export function DashboardPage() {
         </div>
       </header>
 
-      {/* Content */}
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>

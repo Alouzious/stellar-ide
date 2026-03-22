@@ -39,7 +39,7 @@ pub async fn build(
         &[
             "stellar", "contract", "build",
             "--manifest-path", "/workspace/Cargo.toml",
-            "--release",
+            
         ],
         state.config.sandbox_timeout_secs,
     )

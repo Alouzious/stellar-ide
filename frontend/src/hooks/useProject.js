@@ -1,22 +1,22 @@
 import { useProjectStore } from '@/store/projectStore'
 import { getProjects, createProject, updateProject, deleteProject } from '@/api/projects'
 import { notify } from '@/components/ui/Toast'
-
 export function useProject() {
   const { projects, setProjects, addProject, updateProject: update, removeProject, currentProject, setCurrentProject } = useProjectStore()
-
   const fetchProjects = async () => {
     try {
       const { data } = await getProjects()
-      setProjects(data)
+      // handle both {projects: [...]} and plain array responses
+      const list = Array.isArray(data) ? data : (data.projects ?? data.data ?? [])
+      setProjects(list)
     } catch {
       notify.error('Failed to load projects')
     }
   }
-
-  const create = async (data) => {
+  const create = async (payload) => {
     try {
-      const { data: project } = await createProject(data)
+      const { data } = await createProject(payload)
+      const project = data.project ?? data
       addProject(project)
       notify.success('Project created')
       return project
@@ -25,17 +25,16 @@ export function useProject() {
       throw e
     }
   }
-
-  const save = async (id, data) => {
+  const save = async (id, payload) => {
     try {
-      const { data: project } = await updateProject(id, data)
+      const { data } = await updateProject(id, payload)
+      const project = data.project ?? data
       update(project)
       notify.success('Project saved')
     } catch {
       notify.error('Failed to save project')
     }
   }
-
   const remove = async (id) => {
     try {
       await deleteProject(id)
@@ -45,6 +44,5 @@ export function useProject() {
       notify.error('Failed to delete project')
     }
   }
-
   return { projects, currentProject, setCurrentProject, fetchProjects, create, save, remove }
 }

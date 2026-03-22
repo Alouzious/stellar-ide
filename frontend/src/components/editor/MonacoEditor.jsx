@@ -16,6 +16,8 @@ export function MonacoEditor({ onChange }) {
   const handleMount = useCallback((editor) => {
     editorRef.current = editor
     editor.focus()
+    // Force layout recalculation
+    setTimeout(() => editor.layout(), 100)
   }, [])
 
   const handleChange = useCallback((value) => {
@@ -26,8 +28,10 @@ export function MonacoEditor({ onChange }) {
   const language = getFileLanguage(activeFile)
 
   return (
-    <div className="flex-1 overflow-hidden">
+    <div style={{ width: '100%', height: '100%', minHeight: '200px' }}>
       <Editor
+        height="100%"
+        width="100%"
         value={code}
         language={language}
         theme="stellar-dark"

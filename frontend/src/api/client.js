@@ -1,14 +1,22 @@
 import axios from 'axios'
 import { useAuthStore } from '@/store/authStore'
 
+// In docker-compose mode the app is typically served behind nginx (same origin).
+// Defaulting to same-origin avoids hard-coding localhost:8080 which breaks when
+// the browser is accessing nginx on :80.
+const baseURL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api/v1`
+  : '/api/v1'
+
 const client = axios.create({
-  baseURL: (import.meta.env.VITE_API_URL || 'http://localhost:8080') + '/api/v1',
+  baseURL,
   timeout: 30000,
 })
 
 client.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token
   if (token) {
+    config.headers = config.headers || {}
     config.headers.Authorization = `Bearer ${token}`
   }
   return config

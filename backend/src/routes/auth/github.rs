@@ -40,6 +40,6 @@ pub async fn github_callback(
         state.config.jwt_expiry_hours,
     )?;
 
-    let frontend_url = format!("http://localhost:3000/auth/callback?token={}", token);
+    let frontend_url = format!("{}/auth/callback?token={}", state.config.frontend_public_url, token);
     Ok(Redirect::temporary(&frontend_url))
 }

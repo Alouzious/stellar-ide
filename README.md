@@ -82,12 +82,19 @@ docker-compose up --build
 
 ### 5. Open in browser
 
+In docker-compose + nginx mode, **all services are accessed through nginx on port 80**:
+
 | Service | URL |
 |---|---|
-| Frontend | http://localhost:3000 |
-| Backend API | http://localhost:8080 |
+| App (via nginx) | http://localhost |
+| Backend API (direct) | http://localhost:8080 |
+| Frontend (direct) | http://localhost:3000 |
 | PostgreSQL | localhost:5432 |
 | Redis | localhost:6379 |
+
+> **Note:** When using nginx mode (`docker-compose up`), leave `VITE_API_URL` empty/unset.
+> The frontend defaults to same-origin `/api/v1` which nginx proxies to the backend.
+> Only set `VITE_API_URL=http://localhost:8080` when running the frontend directly without nginx.
 
 ---
 
@@ -120,6 +127,17 @@ cargo sqlx migrate run
 ## Environment Variables
 
 See `.env.example` for all required variables.
+
+### Key variables for docker-compose + nginx mode
+
+| Variable | Default | Description |
+|---|---|---|
+| `FRONTEND_PUBLIC_URL` | `http://localhost` | Public URL used for OAuth callback redirect. Set to your domain in production. |
+| `VITE_API_URL` | _(empty)_ | API base URL override. Leave empty for nginx mode (same-origin). Set to `http://localhost:8080` for standalone dev. |
+| `VITE_WS_URL` | _(empty)_ | WebSocket base URL override. Leave empty for nginx mode. |
+| `GITHUB_CLIENT_ID` | _(required)_ | GitHub OAuth App client ID. |
+| `GITHUB_CLIENT_SECRET` | _(required)_ | GitHub OAuth App client secret. |
+| `GITHUB_REDIRECT_URL` | `http://localhost:8080/api/v1/auth/github/callback` | GitHub OAuth callback URL (backend-facing). |
 
 ---
 

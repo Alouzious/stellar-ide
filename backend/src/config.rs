@@ -28,6 +28,11 @@ pub struct Config {
     pub max_sandboxes: u32,
     pub sandbox_timeout_secs: u64,
 
+    // ── Frontend ─────────────────────────────
+    /// Public URL the browser uses to reach the app (used for OAuth redirects).
+    /// In docker-compose + nginx mode set this to `http://localhost` (the nginx origin).
+    pub frontend_public_url: String,
+
     // ── Server ───────────────────────────────
     pub port: u16,
 }
@@ -77,6 +82,10 @@ impl Config {
                 .unwrap_or_else(|_| "120".to_string())
                 .parse::<u64>()
                 .context("SANDBOX_TIMEOUT_SECS must be a number")?,
+
+            // ── Frontend ─────────────────────
+            frontend_public_url: std::env::var("FRONTEND_PUBLIC_URL")
+                .unwrap_or_else(|_| "http://localhost".to_string()),
 
             // ── Server ───────────────────────
             port: std::env::var("PORT")

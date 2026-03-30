@@ -24,21 +24,56 @@ pub async fn run_in_sandbox(
 ) -> AppResult<RunResult> {
     let tmp_dir = tempfile::tempdir()
         .map_err(|e| AppError::Internal(format!("Failed to create temp dir: {}", e)))?;
-    let src_path = tmp_dir.path().join("contract.rs");
-    tokio::fs::write(&src_path, source_code)
+
+    // Create src directory
+    let src_dir = tmp_dir.path().join("src");
+    tokio::fs::create_dir_all(&src_dir)
+        .await
+        .map_err(|e| AppError::Internal(format!("Failed to create src dir: {}", e)))?;
+
+    // Write contract source to src/lib.rs
+    tokio::fs::write(src_dir.join("lib.rs"), source_code)
         .await
         .map_err(|e| AppError::Internal(format!("Failed to write source: {}", e)))?;
 
-    // ── Build volume mount string first ───────
-    let volume_mount = format!("{}:/workspace:ro", tmp_dir.path().display());
+    // Write Cargo.toml
+    let cargo_toml = r#"[package]
+name = "contract"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+soroban-sdk = { version = "22.0.0", features = ["alloc"] }
+
+[dev-dependencies]
+soroban-sdk = { version = "22.0.0", features = ["testutils", "alloc"] }
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+panic = "abort"
+codegen-units = 1
+lto = true
+"#;
+    tokio::fs::write(tmp_dir.path().join("Cargo.toml"), cargo_toml)
+        .await
+        .map_err(|e| AppError::Internal(format!("Failed to write Cargo.toml: {}", e)))?;
+
+    // Mount the whole project directory (rw so cargo can write target/)
+    let volume_mount = format!("{}:/workspace:rw", tmp_dir.path().display());
 
     let mut docker_args = vec![
         "run", "--rm",
         "--memory", "512m",
         "--cpus", "1.0",
-        "--network", "none",
-        "--read-only",
-        "--tmpfs", "/tmp:rw,size=128m",
+        
         "-v", &volume_mount,
         "-w", "/workspace",
         image,

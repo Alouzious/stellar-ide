@@ -1,0 +1,25 @@
+/* Monaco Editor Dark Theme Overrides for StellarIDE */
+.monaco-editor .margin {
+  background-color: #0d0d0d !important;
+}
+
+.monaco-editor-background {
+  background-color: #0d0d0d !important;
+}
+
+.monaco-editor .current-line {
+  background-color: rgba(79, 158, 255, 0.05) !important;
+  border: none !important;
+}
+
+.monaco-editor .line-numbers {
+  color: #555555 !important;
+}
+
+.monaco-editor .cursor {
+  border-color: #4f9eff !important;
+}
+
+.monaco-editor .selected-text {
+  background-color: rgba(79, 158, 255, 0.2) !important;
+}

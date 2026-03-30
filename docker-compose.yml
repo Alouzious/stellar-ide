@@ -48,6 +48,8 @@ services:
       context: .
       dockerfile: docker/Dockerfile.backend
     container_name: stellar_ide_backend
+    group_add:
+      - "108"
     restart: unless-stopped
     environment:
       DATABASE_URL:     ${DATABASE_URL:-postgres://stellar_user:stellar_pass@postgres:5432/stellar_ide}
@@ -55,7 +57,9 @@ services:
       JWT_SECRET:       ${JWT_SECRET:-change_this_secret}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      GITHUB_REDIRECT_URL: ${GITHUB_REDIRECT_URL:-http://localhost:8080/api/v1/auth/github/callback}
       SANDBOX_IMAGE:    ${SANDBOX_IMAGE:-wasm_sandbox}
+      SANDBOX_TIMEOUT_SECS: ${SANDBOX_TIMEOUT_SECS:-600}
       MAX_SANDBOXES:    ${MAX_SANDBOXES:-4}
       RUST_LOG:         ${RUST_LOG:-info}
       PORT:             ${PORT:-8080}

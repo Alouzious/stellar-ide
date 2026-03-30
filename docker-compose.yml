@@ -63,6 +63,7 @@ services:
       MAX_SANDBOXES:    ${MAX_SANDBOXES:-4}
       RUST_LOG:         ${RUST_LOG:-info}
       PORT:             ${PORT:-8080}
+      FRONTEND_PUBLIC_URL: ${FRONTEND_PUBLIC_URL:-http://localhost}
     ports:
       - "8080:8080"
     volumes:

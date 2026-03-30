@@ -1,7 +1,9 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+// Use same-origin by default so nginx can proxy /api/* to backend.
+// Set VITE_API_URL only for non-nginx dev (e.g. VITE_API_URL=http://localhost:8080).
+const API_ORIGIN = import.meta.env.VITE_API_URL || ''
 
 async function streamRequest(endpoint, payload, token, onLine) {
-  const response = await fetch(`${API_URL}/api/v1${endpoint}`, {
+  const response = await fetch(`${API_ORIGIN}/api/v1${endpoint}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

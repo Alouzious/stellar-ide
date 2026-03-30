@@ -73,7 +73,14 @@ lto = true
         "run", "--rm",
         "--memory", "512m",
         "--cpus", "1.0",
-        
+
+        // Mount cargo registry/git cache so crates are not re-downloaded on every run.
+        // The named volume "cargo_cache" is defined in docker-compose.yml and mounted
+        // into the backend container at /mnt/cargo; we pass it through to the sandbox.
+        "-v", "cargo_cache:/mnt/cargo",
+        "-e", "CARGO_HOME=/mnt/cargo",
+        "-e", "CARGO_TARGET_DIR=/mnt/cargo/target",
+
         "-v", &volume_mount,
         "-w", "/workspace",
         image,

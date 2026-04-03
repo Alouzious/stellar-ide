@@ -111,20 +111,28 @@ async fn execute_command(args: &[&str]) -> AppResult<RunResult> {
     let mut stdout_lines = BufReader::new(stdout_handle).lines();
     let mut stderr_lines = BufReader::new(stderr_handle).lines();
 
-    let mut stdout = String::new();
-    let mut stderr = String::new();
-
-    while let Some(line) = stdout_lines.next_line().await
-        .map_err(|e| AppError::Internal(e.to_string()))? {
-        stdout.push_str(&line);
-        stdout.push('\n');
-    }
-
-    while let Some(line) = stderr_lines.next_line().await
-        .map_err(|e| AppError::Internal(e.to_string()))? {
-        stderr.push_str(&line);
-        stderr.push('\n');
-    }
+    // Read stdout and stderr CONCURRENTLY to prevent deadlock.
+    // If we read them sequentially, the process can fill up the stderr
+    // pipe buffer while we are still draining stdout — causing it to
+    // block forever waiting for stderr to be consumed.
+    let (stdout, stderr) = tokio::join!(
+        async {
+            let mut out = String::new();
+            while let Ok(Some(line)) = stdout_lines.next_line().await {
+                out.push_str(&line);
+                out.push('\n');
+            }
+            out
+        },
+        async {
+            let mut err = String::new();
+            while let Ok(Some(line)) = stderr_lines.next_line().await {
+                err.push_str(&line);
+                err.push('\n');
+            }
+            err
+        }
+    );
 
     let status = child.wait().await
         .map_err(|e| AppError::Internal(format!("Failed to wait for docker: {}", e)))?;

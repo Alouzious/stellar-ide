@@ -100,3 +100,12 @@ pub struct ErrorResponse {
     pub error: String,
     pub status: u16,
 }
+
+// ── Prepare Deploy Response ───────────────────
+#[derive(Debug, Serialize)]
+pub struct PrepareDeployResponse {
+    pub deployment_id: String,
+    pub wasm_hash: String,
+    pub network: String,
+    pub source_account: String,
+}

@@ -154,3 +154,93 @@ pub fn make_sse_done(exit_code: i32) -> AppResult<Event> {
     let payload = json!({ "type": "done", "data": "", "exit_code": exit_code });
     Ok(Event::default().data(payload.to_string()))
 }
+pub struct RunResultWithFile {
+    pub result: RunResult,
+    pub file_bytes: Option<Vec<u8>>,
+}
+
+pub async fn run_in_sandbox_read_file(
+    image: &str,
+    source_code: &str,
+    command: &[&str],
+    output_file_in_container: &str,
+    timeout_secs: u64,
+) -> AppResult<RunResultWithFile> {
+    let tmp_dir = tempfile::tempdir()
+        .map_err(|e| AppError::Internal(format!("Failed to create temp dir: {}", e)))?;
+    let src_dir = tmp_dir.path().join("src");
+    tokio::fs::create_dir_all(&src_dir).await
+        .map_err(|e| AppError::Internal(format!("Failed to create src dir: {}", e)))?;
+    tokio::fs::write(src_dir.join("lib.rs"), source_code).await
+        .map_err(|e| AppError::Internal(format!("Failed to write source: {}", e)))?;
+    let cargo_toml = r#"[package]
+name = "contract"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+soroban-sdk = { version = "22.0.0", features = ["alloc"] }
+
+[dev-dependencies]
+soroban-sdk = { version = "22.0.0", features = ["testutils", "alloc"] }
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+panic = "abort"
+codegen-units = 1
+lto = true
+"#;
+    tokio::fs::write(tmp_dir.path().join("Cargo.toml"), cargo_toml).await
+        .map_err(|e| AppError::Internal(format!("Failed to write Cargo.toml: {}", e)))?;
+    let volume_mount = format!("{}:/workspace:rw", tmp_dir.path().display());
+    let mut docker_args = vec![
+        "run", "--rm",
+        "--memory", "2g",
+        "--cpus", "1.0",
+        "--user", "root",
+        "-v", "cargo_cache:/mnt/cargo",
+        "-e", "CARGO_HOME=/mnt/cargo",
+        "-e", "CARGO_TARGET_DIR=/mnt/cargo/target",
+        "-v", &volume_mount,
+        "-w", "/workspace",
+        image,
+    ];
+    docker_args.extend_from_slice(command);
+    let result = timeout(
+        Duration::from_secs(timeout_secs),
+        execute_command(&docker_args),
+    )
+    .await
+    .map_err(|_| AppError::Internal(format!("Sandbox timed out after {}s", timeout_secs)))??;
+
+    // Copy output file to workspace so we can read it from host
+    let file_bytes = if result.exit_code == 0 {
+        let copy_mount = format!("{}:/workspace:rw", tmp_dir.path().display());
+        let cp_cmd = format!("cp {} /workspace/output.wasm 2>/dev/null || true", output_file_in_container);
+        let copy_args = vec![
+            "run", "--rm",
+            "--user", "root",
+            "-v", "cargo_cache:/mnt/cargo",
+            "-v", copy_mount.as_str(),
+            "-w", "/workspace",
+            image,
+            "sh", "-c",
+            cp_cmd.as_str(),
+        ];
+        let _ = execute_command(&copy_args).await;
+        let wasm_path = tmp_dir.path().join("output.wasm");
+        tokio::fs::read(&wasm_path).await.ok()
+    } else {
+        None
+    };
+
+    Ok(RunResultWithFile { result, file_bytes })
+}

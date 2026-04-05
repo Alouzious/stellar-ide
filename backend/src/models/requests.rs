@@ -71,3 +71,12 @@ pub struct FriendbotRequest {
     pub address: String,
     pub network: Option<String>,
 }
+
+// ── Deploy Confirm ────────────────────────────
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConfirmDeployRequest {
+    pub deployment_id: String,
+    pub contract_id: String,
+    pub tx_hash: Option<String>,
+    pub network: String,
+}

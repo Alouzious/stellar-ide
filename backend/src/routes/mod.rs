@@ -46,6 +46,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/sandbox/audit",         post(sandbox::audit::audit))
         // Deploy
         .route("/deploy",                post(deploy::deploy::deploy))
+        .route("/deploy/confirm",       post(deploy::deploy::confirm))
         .route("/deploy/history",        get(deploy::history::history))
         .route("/deploy/interface",      post(deploy::interface::interface))
         // Artifacts

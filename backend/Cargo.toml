@@ -8,6 +8,7 @@ name = "stellaride-backend"
 path = "src/main.rs"
 
 [dependencies]
+base64 = "0.22"
 
 # ── Web framework ─────────────────────────────
 axum              = { version = "0.7",  features = ["ws", "macros"] }

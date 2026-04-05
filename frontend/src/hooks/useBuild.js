@@ -14,7 +14,7 @@ export function useBuild() {
     setRunning(true)
     addLine({ type: 'cmd', text: 'cargo build --target wasm32-unknown-unknown --release' })
     try {
-      await buildCode(code, token, (line) => addLine({ type: 'output', text: line }))
+      await buildCode(code, token, (line) => addLine(line))
       addLine({ type: 'success', text: 'Build successful — WASM artifact generated' })
       notify.success('Build successful')
     } catch (e) {

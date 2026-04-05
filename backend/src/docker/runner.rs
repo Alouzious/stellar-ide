@@ -71,8 +71,9 @@ lto = true
 
     let mut docker_args = vec![
         "run", "--rm",
-        "--memory", "512m",
+        "--memory", "2g",
         "--cpus", "1.0",
+        "--user", "root",
 
         // Mount cargo registry/git cache so crates are not re-downloaded on every run.
         // The named volume "cargo_cache" is defined in docker-compose.yml and mounted

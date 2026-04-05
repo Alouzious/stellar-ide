@@ -21,7 +21,7 @@ mod test {
     #[test]
     fn test_hello() {
         let env = Env::default();
-        let contract_id = env.register_contract(None, HelloContract);
+        let contract_id = env.register(HelloContract, ());
         let client = HelloContractClient::new(&env, &contract_id);
 
         let words = client.hello(&symbol_short!("Dev"));
@@ -42,10 +42,10 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-soroban-sdk = { version = "21.0.0", features = ["alloc"] }
+soroban-sdk = { version = "22.0.0", features = ["alloc"] }
 
 [dev-dependencies]
-soroban-sdk = { version = "21.0.0", features = ["testutils"] }
+soroban-sdk = { version = "22.0.0", features = ["testutils"] }
 
 [profile.release]
 opt-level = "z"

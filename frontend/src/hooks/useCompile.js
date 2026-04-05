@@ -14,7 +14,7 @@ export function useCompile() {
     setRunning(true)
     addLine({ type: 'cmd', text: 'cargo build --target wasm32-unknown-unknown --release' })
     try {
-      await compileCode(code, token, (line) => addLine({ type: 'output', text: line }))
+      await compileCode(code, token, (line) => addLine(line))
       addLine({ type: 'success', text: 'Compilation successful' })
       notify.success('Compilation successful')
     } catch (e) {

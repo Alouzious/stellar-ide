@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     github_login  TEXT,
     avatar_url    TEXT,
     display_name  TEXT,
-    created_at    TIMESTAMP   NOT NULL DEFAULT NOW(),
-    updated_at    TIMESTAMP   NOT NULL DEFAULT NOW()
+    created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_github_id
@@ -31,8 +31,8 @@ CREATE TABLE IF NOT EXISTS projects (
     name        TEXT        NOT NULL,
     description TEXT,
     files       JSONB       NOT NULL DEFAULT '{}',
-    created_at  TIMESTAMP   NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMP   NOT NULL DEFAULT NOW()
+    created_at  TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_projects_user_id
@@ -48,7 +48,8 @@ CREATE TABLE IF NOT EXISTS deployments (
     status        TEXT        NOT NULL DEFAULT 'pending',
     tx_hash       TEXT,
     error_message TEXT,
-    deployed_at   TIMESTAMP   NOT NULL DEFAULT NOW()
+    deployed_at   TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_deployments_user_id
@@ -68,7 +69,7 @@ CREATE TABLE IF NOT EXISTS artifacts (
     typescript_client TEXT,
     react_example     TEXT,
     zip_data          BYTEA,
-    created_at        TIMESTAMP NOT NULL DEFAULT NOW()
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_artifacts_deployment_id

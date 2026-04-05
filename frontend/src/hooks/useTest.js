@@ -15,12 +15,12 @@ export function useTest() {
     const cmd = testName ? `cargo test ${testName}` : 'cargo test'
     addLine({ type: 'cmd', text: cmd })
     try {
-      await testCode(code, token, (line) => addLine({ type: 'output', text: line }))
+      await testCode(code, token, (line) => addLine(line))
       addLine({ type: 'success', text: 'All tests passed' })
       notify.success('Tests passed')
     } catch (e) {
-      addLine({ type: 'error', text: e.message })
-      notify.error('Tests failed')
+        addLine({ type: 'error', text: e.message })
+        notify.error('Tests failed')
     } finally {
       setRunning(false)
     }

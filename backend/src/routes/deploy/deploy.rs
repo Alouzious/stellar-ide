@@ -47,7 +47,7 @@ pub async fn deploy(
     let build_result = run_in_sandbox(
         &state.config.sandbox_image,
         &body.source_code,
-        &["stellar", "contract", "build", "--release"],
+        &["stellar", "contract", "build"],
         state.config.sandbox_timeout_secs,
     )
     .await?;
@@ -64,9 +64,9 @@ pub async fn deploy(
     }
 
     // ── Deploy to Stellar network ─────────────
-    let network_arg = match body.network.as_str() {
-        "mainnet" => "--network mainnet",
-        _         => "--network testnet",
+    let network_name = match body.network.as_str() {
+        "mainnet" => "mainnet",
+        _         => "testnet",
     };
 
     let deploy_result = run_in_sandbox(
@@ -74,8 +74,9 @@ pub async fn deploy(
         &body.source_code,
         &[
             "stellar", "contract", "deploy",
-            "--wasm", "/workspace/target/wasm32-unknown-unknown/release/contract.wasm",
-            network_arg,
+            "--source-account", &body.source_account,
+            "--wasm", "/mnt/cargo/target/wasm32v1-none/release/contract.wasm",
+            "--network", network_name,
         ],
         state.config.sandbox_timeout_secs,
     )

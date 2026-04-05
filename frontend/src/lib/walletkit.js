@@ -9,23 +9,29 @@ const MODULES = [
   new LobstrModule(),
 ]
 
-export function initKit(network = 'TESTNET') {
-  // StellarWalletsKit v2 uses static methods; instantiation registers modules
-  new StellarWalletsKit({
-    network: network === 'MAINNET' ? Networks.PUBLIC : Networks.TESTNET,
-    selectedWalletId: FREIGHTER_ID,
-    modules: MODULES,
-  })
+let initialized = false
+
+function ensureInit(network = 'TESTNET') {
+  if (!initialized) {
+    StellarWalletsKit.init({
+      network: network === 'MAINNET' ? Networks.PUBLIC : Networks.TESTNET,
+      selectedWalletId: FREIGHTER_ID,
+      modules: MODULES,
+    })
+    initialized = true
+  }
 }
 
 export async function connectWallet(walletId = FREIGHTER_ID, network = 'TESTNET') {
-  initKit(network)
+  ensureInit(network)
   StellarWalletsKit.setWallet(walletId)
-  const result = await StellarWalletsKit.getAddress()
+  // Use selectedModule to directly request access from the wallet
+  const result = await StellarWalletsKit.selectedModule.getAddress({ skipRequestAccess: false })
   return result?.address || result
 }
 
 export async function signTransaction(xdr, network = 'TESTNET') {
+  ensureInit(network)
   const { signedTxXdr } = await StellarWalletsKit.signTransaction(xdr, {
     networkPassphrase: network === 'MAINNET'
       ? 'Public Global Stellar Network ; September 2015'

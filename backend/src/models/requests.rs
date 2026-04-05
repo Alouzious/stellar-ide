@@ -48,6 +48,7 @@ pub struct DeployRequest {
     pub project_id: String,
     pub network: String,
     pub source_code: String,
+    pub source_account: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

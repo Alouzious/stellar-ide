@@ -1,9 +1,7 @@
 # ============================================
 # StellarIDE — Soroban Contract Template
-# This file is copied for each new user contract
 # {{CONTRACT_NAME}} is replaced at build time
 # ============================================
-
 [package]
 name        = "{{CONTRACT_NAME}}"
 version     = "0.1.0"
@@ -14,10 +12,10 @@ publish     = false
 crate-type = ["cdylib"]
 
 [dependencies]
-soroban-sdk = { version = "21.0.0", features = ["alloc"] }
+soroban-sdk = { version = "22.0.0", features = ["alloc"] }
 
 [dev-dependencies]
-soroban-sdk = { version = "21.0.0", features = ["testutils", "alloc"] }
+soroban-sdk = { version = "22.0.0", features = ["testutils", "alloc"] }
 
 [profile.release]
 opt-level        = "z"
@@ -30,5 +28,5 @@ codegen-units    = 1
 lto              = true
 
 [profile.release-with-logs]
-inherits  = "release"
+inherits         = "release"
 debug-assertions = true

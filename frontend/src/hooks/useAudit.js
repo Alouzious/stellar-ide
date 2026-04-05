@@ -14,7 +14,7 @@ export function useAudit() {
     setRunning(true)
     addLine({ type: 'cmd', text: 'scout-soroban audit --output json' })
     try {
-      await auditCode(code, token, (line) => addLine({ type: 'output', text: line }))
+      await auditCode(code, token, (line) => addLine(line))
       addLine({ type: 'success', text: 'Audit complete' })
       notify.success('Audit complete')
     } catch (e) {

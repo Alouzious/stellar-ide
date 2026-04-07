@@ -155,16 +155,17 @@ function extractContractId(resultMetaXdr) {
 export async function uploadAndDeployWasm(wasmBase64, sourceAccount, network = 'TESTNET', signFn) {
   const config = NETWORKS[network] || NETWORKS.TESTNET
   const server = new StellarSdk.rpc.Server(config.url)
-
-  // Decode base64 WASM
   const wasmBytes = Uint8Array.from(atob(wasmBase64), c => c.charCodeAt(0))
 
-  // Load account
-  const account = await server.getAccount(sourceAccount)
+  const signTransaction = async (xdr) => {
+    const signed = await signFn(xdr)
+    return signed
+  }
 
-  // Step 1 — Upload WASM
+  // Step 1 — Upload WASM using AssembledTransaction
+  const account = await server.getAccount(sourceAccount)
   const uploadTx = new StellarSdk.TransactionBuilder(account, {
-    fee: StellarSdk.BASE_FEE,
+    fee: '1000000',
     networkPassphrase: config.passphrase,
   })
     .addOperation(StellarSdk.Operation.uploadContractWasm({ wasm: wasmBytes }))
@@ -176,20 +177,29 @@ export async function uploadAndDeployWasm(wasmBase64, sourceAccount, network = '
     throw new Error(`Upload simulation failed: ${uploadSim.error}`)
   }
   const uploadAssembled = StellarSdk.rpc.assembleTransaction(uploadTx, uploadSim).build()
-  const signedUploadXdr = await signFn(uploadAssembled.toXDR())
-  const uploadResult = await submitAndWait(server, signedUploadXdr, config.passphrase)
+  const uploadXdr = uploadAssembled.toEnvelope().toXDR('base64')
+  const signedUploadXdr = await signFn(uploadXdr)
 
-  // Extract wasm hash from upload result
-  const wasmHash = uploadResult.returnValue
-    ? StellarSdk.xdr.ScVal.fromXDR(uploadResult.returnValue, 'base64').bytes().toString('hex')
-    : null
-  if (!wasmHash) throw new Error('Failed to get wasm hash from upload')
+  // Submit upload
+  const uploadSent = await server.sendTransaction({ toXDR: () => signedUploadXdr })
+  if (uploadSent.status === 'ERROR') throw new Error(`Upload failed: ${JSON.stringify(uploadSent.errorResult)}`)
+  const uploadResult = await pollTransaction(server, uploadSent.hash)
 
-  // Step 2 — Deploy contract using wasm hash
+  // Extract wasm hash
+  let wasmHash
+  try {
+    const rv = uploadResult.returnValue
+    const scval = (rv && typeof rv === 'object') ? rv : StellarSdk.xdr.ScVal.fromXDR(rv, 'base64')
+    wasmHash = Buffer.from(scval.bytes()).toString('hex')
+  } catch(e) {
+    throw new Error('Failed to extract wasm hash: ' + e.message)
+  }
+
+  // Step 2 — Deploy contract
   const account2 = await server.getAccount(sourceAccount)
   const salt = crypto.getRandomValues(new Uint8Array(32))
   const deployTx = new StellarSdk.TransactionBuilder(account2, {
-    fee: StellarSdk.BASE_FEE,
+    fee: '1000000',
     networkPassphrase: config.passphrase,
   })
     .addOperation(StellarSdk.Operation.createCustomContract({
@@ -205,22 +215,39 @@ export async function uploadAndDeployWasm(wasmBase64, sourceAccount, network = '
     throw new Error(`Deploy simulation failed: ${deploySim.error}`)
   }
   const deployAssembled = StellarSdk.rpc.assembleTransaction(deployTx, deploySim).build()
-  const signedDeployXdr = await signFn(deployAssembled.toXDR())
-  const deployResult = await submitAndWait(server, signedDeployXdr, config.passphrase)
+  const deployXdr = deployAssembled.toEnvelope().toXDR('base64')
+  const signedDeployXdr = await signFn(deployXdr)
+
+  const deploySent = await server.sendTransaction({ toXDR: () => signedDeployXdr })
+  if (deploySent.status === 'ERROR') throw new Error(`Deploy failed: ${JSON.stringify(deploySent.errorResult)}`)
+  const deployResult = await pollTransaction(server, deploySent.hash)
 
   // Extract contract ID
-  const contractId = deployResult.returnValue
-    ? StellarSdk.Address.fromScVal(
-        StellarSdk.xdr.ScVal.fromXDR(deployResult.returnValue, 'base64')
-      ).toString()
-    : null
+  let contractId = null
+  try {
+    const rv = deployResult.returnValue
+    const scval = (rv && typeof rv === 'object') ? rv : StellarSdk.xdr.ScVal.fromXDR(rv, 'base64')
+    contractId = StellarSdk.Address.fromScVal(scval).toString()
+  } catch(e) {
+    contractId = deployResult.contractId || null
+  }
 
   return { contractId, txHash: deployResult.txHash }
 }
 
+async function pollTransaction(server, hash) {
+  for (let i = 0; i < 40; i++) {
+    const result = await server.getTransaction(hash)
+    if (result.status === 'SUCCESS') return { ...result, txHash: hash }
+    if (result.status === 'FAILED') throw new Error(`Transaction failed: ${JSON.stringify(result)}`)
+    await new Promise(r => setTimeout(r, 1500))
+  }
+  throw new Error('Transaction timed out')
+}
+
 async function submitAndWait(server, signedXdr, passphrase) {
-  const tx = StellarSdk.TransactionBuilder.fromXDR(signedXdr, passphrase)
-  const sent = await server.sendTransaction(tx)
+  const txObj = { toXDR: () => signedXdr }
+  const sent = await server.sendTransaction(txObj)
   if (sent.status === 'ERROR') {
     throw new Error(`Transaction failed: ${JSON.stringify(sent.errorResult)}`)
   }
